@@ -160,7 +160,68 @@ $("#remove-tasks").on("click", function() {
   }
   saveTasks();
 });
+$('.card .list-group').sortable({
+  connectWith: $('.card .list-group'),
+  scroll: false, 
+  tolerance: 'pointer',
+  helper: 'clone',
+  activate: function(event) {
+    $(this).addClass('dropover');
+    $('.bottom-trash').addClass('bottom-trash-drag');
+  },
+  deactivate: function(event) {
+    $(this).removeClass('dropover');
+    $('.bottom-trash').removeClass('bottom-trash-drag');
+  }, 
+  over: function(event) {
+    $(event.target).addClass('dropover-active');
+  },
+  out: function(event) {
+    $(this).removeClass('dropover-active');
+  },
+  // fired when contents have been re-ordered within a list, when an item is removed from a list, or when an item is added to a list.  so moving from one column to the other will fire the update method on both moved from and moved to columns
+  update: function(event) {
+    // array to store the task data in
+    var tempArr = [];
 
+    // loop over current set of children in sortable list.  in the case of a task moving from one column to another, each column (.list-group) will have it's own children that it will push into it's own tempArr with the object data for the task
+    $(this).children().each(function() {
+      var text = $(this)
+        .find('p')
+        .text()
+        .trim();
+
+      var date = $(this)
+        .find('span')
+        .text()
+        .trim();
+      tempArr.push({
+        text: text, 
+        date: date
+      })
+    });
+    var arrName =$(this)
+      .attr('id')
+      .replace('list-', '');
+     tasks[arrName] = tempArr;
+    saveTasks();
+  }
+});
+
+
+$('#trash').droppable({
+  accept: '.card .list-group-item',
+  tolerance: 'touch',
+  drop: function(event, ui) {
+    ui.draggable.remove();
+  },
+  over: function(event, ui) {
+    console.log("out");
+  },
+  out: function(event, ui) {
+    console.log("out");
+  }
+});
 // load tasks for the first time
 loadTasks();
 

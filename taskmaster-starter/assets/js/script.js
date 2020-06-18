@@ -3,16 +3,13 @@ var tasks = {};
 var createTask = function(taskText, taskDate, taskList) {
   // create elements that make up a task item
   var taskLi = $("<li>").addClass("list-group-item");
-  var taskSpan = $("<span>")
-    .addClass("badge badge-primary badge-pill")
-    .text(taskDate);
-  var taskP = $("<p>")
-    .addClass("m-1")
-    .text(taskText);
+  var taskSpan = $("<span>").addClass("badge badge-primary badge-pill").text(taskDate);
+  var taskP = $("<p>").addClass("m-1").text(taskText);
 
   // append span and p element to parent li
   taskLi.append(taskSpan, taskP);
 
+  auditTask(taskLi);
 
   // append to ul list on the page
   $("#list-" + taskList).append(taskLi);
@@ -76,19 +73,23 @@ $(this).replaceWith(taskP);
 $(".list-group").on("click", "span", function() {
   //current text
   var date = $(this) .text() .trim();
-  //new input element
-  var dateInput = $("<input>") 
-    .attr ("type", "text")
-    .addClass("form-control")
-    .val(date);
-  //swap elements
+
+  var dateInput = $("<input>").attr("type", "text").addClass("form-control")
+
   $(this).replaceWith(dateInput);
+  dateInput.datepicker({
+    minDate: 1,
+    onClose: function() {
+      // when calendar is closed, force a "change" event on the `dateInput`
+      $(this).trigger("change");
+    }
+  });
   //focus new element
   dateInput.trigger("focus");
 });
 
 // due date VALUE changed
-$(".list-group").on("blur", "input[type='text']", function() {
+$(".list-group").on("change", "input[type='text']", function() {
   // get current text
   var date = $(this)
     .val()
@@ -116,6 +117,9 @@ $(".list-group").on("blur", "input[type='text']", function() {
 
   // replace input with span element
   $(this).replaceWith(taskSpan);
+
+  // Pass task's <li> element into auditTask() to check new due date
+  auditTask($(taskSpan).closest(".list-group-item"));
 });
 
 // modal was triggered
@@ -179,26 +183,24 @@ $('.card .list-group').sortable({
   out: function(event) {
     $(this).removeClass('dropover-active');
   },
-  // fired when contents have been re-ordered within a list, when an item is removed from a list, or when an item is added to a list.  so moving from one column to the other will fire the update method on both moved from and moved to columns
   update: function(event) {
     // array to store the task data in
     var tempArr = [];
 
-    // loop over current set of children in sortable list.  in the case of a task moving from one column to another, each column (.list-group) will have it's own children that it will push into it's own tempArr with the object data for the task
-    $(this).children().each(function() {
-      var text = $(this)
-        .find('p')
-        .text()
-        .trim();
+$(this).children().each(function() {
+  var text = $(this)
+  .find('p')
+  .text()
+  .trim();
 
-      var date = $(this)
-        .find('span')
-        .text()
-        .trim();
-      tempArr.push({
-        text: text, 
-        date: date
-      })
+  var date = $(this)
+    .find('span')
+    .text()
+    .trim();
+    tempArr.push({
+      text: text, 
+      date: date
+   })
     });
     var arrName =$(this)
       .attr('id')
@@ -222,6 +224,25 @@ $('#trash').droppable({
     console.log("out");
   }
 });
+
+$("#modalDueDate").datepicker({
+  //prevent user from picking date before current date
+  minDate: 1
+});
+
+var auditTask = function(taskEl) {
+  var date = $(taskEl).find("span").text().trim();
+  console.log(date);
+  var time = moment(date, "L").set("hour", 17);
+  console.log(time);
+  $(taskEl).removeClass("list-group-item-warning list-group-item-danger");
+  if (moment().isAfter(time)) {
+    $(taskEl).addClass("list-group-item-danger");
+  }
+  else if (Math.abs(moment().diff(time, "days")) <= 2) {
+    $(taskEl).addClass("list-group-item-warning");
+  }
+}; 
 // load tasks for the first time
 loadTasks();
 
